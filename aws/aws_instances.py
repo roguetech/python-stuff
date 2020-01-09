@@ -1,4 +1,4 @@
-import boto3, sys, json, os
+import boto3, sys, json, os, requests
 
 instance_list = []
 target_list = []
@@ -18,14 +18,25 @@ def print_ec2_tag_names():
                 with open(filename, 'r') as instance_file:
                     data = json.load(instance_file)
                 app = ""
-                env = ""
+                BUILD_RELEASE_NUMBER = ""
+                GIT_REVISION = ""
+                BRANCH_NAME = ""
                 for i in range(len(data)):
                     if data[i]["Key"] == "application-name":
                          app = data[i]["Value"]
+                         app = app.split("-", 1)
+                         app = app[1]
                     if data[i]["Key"] == "environment":
                          env = data[i]["Value"]
-                url = "http://jenkins/view/" + app + "/job/no-" + app + "-release-" + env + "/lastCompletedBuild"
+                    if data[i]["Key"] == "BUILD_RELEASE_NUMBER":
+                         BUILD_RELEASE_NUMBER = data[i]["Value"]
+                    if data[i]["Key"] == "GIT_REVISION":
+                         GIT_REVISION = data[i]["Value"]
+                    if data[i]["Key"] == "BRANCH_NAME":
+                         BRANCH_NAME = data[i]["Value"]
+                url = "http://jenkins/job/no-" + app + "-service-release-" + env  + "/buildWithParameters?BUILD_RELEASE_NUMBER=" + BUILD_RELEASE_NUMBER + "&GIT_REVISION=" + GIT_REVISION + "&BRANCH_NAME=" + BRANCH_NAME
                 print(url)
+                #r = requests.post(url = url)
 
 def get_lb():
        lb = boto3.client('elbv2')
@@ -36,7 +47,11 @@ def get_lb():
            load_balancer_health = lb.describe_target_health(TargetGroupArn=l['TargetGroupArn'])
            if load_balancer_health['TargetHealthDescriptions'][0]['TargetHealth']['State'] == "healthy":
                for item in load_balancer_health['TargetHealthDescriptions']:
-                   instance_list.append(item["Target"]["Id"])
+                   #if 'spot' == instance.instance_lifecycle:
+                        instance_list.append(item["Target"]["Id"])
+                   #else:
+                   #     print("Not Spot instance")
+                   #     continue
            else:
                print("not healthy")
 
