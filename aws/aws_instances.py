@@ -22,10 +22,12 @@ def print_ec2_tag_names():
                 GIT_REVISION = ""
                 BRANCH_NAME = ""
                 for i in range(len(data)):
-                    if data[i]["Key"] == "application-name":
+                    if data[i]["Key"] == "chef_roles":
                          app = data[i]["Value"]
-                         app = app.split("-", 1)
-                         app = app[1]
+                         app = app.strip("role[")
+                         app = app.strip("]")
+                         index = app.find("service-")
+                         app = app[:index] + 'release-' + app[index:]
                     if data[i]["Key"] == "environment":
                          env = data[i]["Value"]
                     if data[i]["Key"] == "BUILD_RELEASE_NUMBER":
@@ -34,7 +36,7 @@ def print_ec2_tag_names():
                          GIT_REVISION = data[i]["Value"]
                     if data[i]["Key"] == "BRANCH_NAME":
                          BRANCH_NAME = data[i]["Value"]
-                url = "http://jenkins/job/no-" + app + "-service-release-" + env  + "/buildWithParameters?BUILD_RELEASE_NUMBER=" + BUILD_RELEASE_NUMBER + "&GIT_REVISION=" + GIT_REVISION + "&BRANCH_NAME=" + BRANCH_NAME
+                url = "http://jenkins/job/" + app + "/buildWithParameters?BUILD_RELEASE_NUMBER=" + BUILD_RELEASE_NUMBER + "&GIT_REVISION=" + GIT_REVISION + "&BRANCH_NAME=" + BRANCH_NAME
                 print(url)
                 #r = requests.post(url = url)
 
