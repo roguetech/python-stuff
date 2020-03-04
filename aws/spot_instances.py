@@ -1,9 +1,19 @@
 import boto3, sys, json, os, requests
 
-#ec2 = boto3.resource('ec2')
+ec2a = boto3.resource('ec2')
 ec2 = boto3.client('ec2')
 
-instances_to_delete = 'i-0b5b381724ea60cb8'
+filters = [
+	{
+		'Name': 'instance-state-name',
+		'Values': ['running']
+	}
+]
+
+running_instances = ec2a.instances.filter(Filters=filters)
+all_instances = ec2a.instances.all()
+
+instances_to_delete = []
 
 def terminate_instance():
 	#for instance in ec2.instances.all():
@@ -25,14 +35,14 @@ def terminate_instance():
 		print(spotrequest)
 		ec2a.cancel_spot_instance_requests(SpotInstanceRequestIds=[x])
 
-def new_term_instance():
+def new_term_instance(instances_to_delete):
 	instance = ec2.describe_instances(InstanceIds=[instances_to_delete])
 	if 'InstanceLifecycle' in instance['Reservations'][0]['Instances'][0] and instance['Reservations'][0]['Instances'][0]['InstanceLifecycle'] == 'spot':
 			print("This is a spot instance, cancelling spot request and deleting spot instance " + instances_to_delete)
 			spotrequest = instance['Reservations'][0]['Instances'][0]['SpotInstanceRequestId']
 			print(spotrequest)
-			ec2.cancel_spot_instance_requests(SpotInstanceRequestIds=[spotrequest])
-	ec2.terminate_instances(InstanceIds=[instances_to_delete])
+			#ec2.cancel_spot_instance_requests(SpotInstanceRequestIds=[spotrequest])
+	#ec2.terminate_instances(InstanceIds=[instances_to_delete])
 
 def cancel_spot(env, instance_id):
         session = boto3.Session(profile_name=env)
@@ -42,7 +52,15 @@ def cancel_spot(env, instance_id):
             print("This is a spot instance, cancelling spot request and deleting spot instance ")
             spotrequest = instance['Reservations'][0]['Instances'][0]['SpotInstanceRequestId']
             ec2.cancel_spot_instance_requests(SpotInstanceRequestIds=[spotrequest])
-        else
+        else:
             print("This is not a not a spot")
 
-new_term_instance()
+#new_term_instance()
+
+for instance in all_instances:
+        instances_to_delete.append(instance)
+        #print(instances_to_delete)
+        #new_term_instance(instances_to_delete)
+        #print(running_instances)
+print(instances_to_delete)
+
